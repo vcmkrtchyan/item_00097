@@ -13,17 +13,8 @@ import { ExpenseForm } from "../expenses/expense-form"
 import { BookmarkList } from "../bookmarks/bookmark-list"
 import { BookmarkForm } from "../bookmarks/bookmark-form"
 import { TravelFlowDiagram } from "../travel-flow-diagram"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { toast } from "sonner"
 
 interface TripDetailsProps {
   trip: Trip
@@ -31,17 +22,35 @@ interface TripDetailsProps {
 }
 
 export function TripDetails({ trip, onBack }: TripDetailsProps) {
-  const { deleteTrip, getExpensesByTripId, getBookmarksByTripId } = useTravel()
+  const { deleteTrip, restoreTrip, getExpensesByTripId, getBookmarksByTripId } = useTravel()
   const [isEditing, setIsEditing] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
   const [isAddingExpense, setIsAddingExpense] = useState(false)
   const [isAddingBookmark, setIsAddingBookmark] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const expenses = getExpensesByTripId(trip.id)
   const bookmarks = getBookmarksByTripId(trip.id)
 
   const handleDelete = () => {
-    deleteTrip(trip.id)
+    const deletedTrip = deleteTrip(trip.id)
+
+    if (deletedTrip) {
+      toast("Trip deleted", {
+        description: `"${deletedTrip.title}" has been deleted.`,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            restoreTrip(deletedTrip)
+            toast.success("Trip restored", {
+              description: `"${deletedTrip.title}" has been restored.`,
+            })
+          },
+        },
+        duration: 5000,
+      })
+    }
+
     onBack()
   }
 
@@ -71,28 +80,24 @@ export function TripDetails({ trip, onBack }: TripDetailsProps) {
             <Edit className="mr-2 h-4 w-4" />
             Edit
           </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete this trip and all associated data. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </Button>
         </div>
       </div>
+
+      {/* Custom Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Trip"
+        description="This will permanently delete this trip and all associated data. This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+      />
 
       <Card>
         <CardHeader>
@@ -215,7 +220,7 @@ export function TripDetails({ trip, onBack }: TripDetailsProps) {
                         <div>
                           <h3 className="font-medium text-lg">{destination.name}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {formatDate(destination.startDate)} - {formatDate(destination.endDate)}
+                            {formatDate(destination.startDate, true)} - {formatDate(destination.endDate, true)}
                           </p>
                         </div>
                       </div>

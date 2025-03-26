@@ -6,18 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Edit, MapPin, Trash2 } from "lucide-react"
 import { BookmarkForm } from "./bookmark-form"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { toast } from "sonner"
 
 interface BookmarkListProps {
   bookmarks: Bookmark[]
@@ -27,6 +18,7 @@ interface BookmarkListProps {
 export function BookmarkList({ bookmarks, tripId }: BookmarkListProps) {
   const { deleteBookmark, trips } = useTravel()
   const [editingBookmarkId, setEditingBookmarkId] = useState<string | null>(null)
+  const [bookmarkToDelete, setBookmarkToDelete] = useState<string | null>(null)
 
   // Group bookmarks by category
   const bookmarksByCategory = bookmarks.reduce(
@@ -48,6 +40,19 @@ export function BookmarkList({ bookmarks, tripId }: BookmarkListProps) {
     if (!tripId) return "Unassigned"
     const trip = trips.find((t) => t.id === tripId)
     return trip ? trip.title : "Unknown Trip"
+  }
+
+  const handleDeleteBookmark = () => {
+    if (bookmarkToDelete) {
+      const bookmark = bookmarks.find((b) => b.id === bookmarkToDelete)
+      if (bookmark) {
+        deleteBookmark(bookmarkToDelete)
+        toast.success("Bookmark deleted", {
+          description: `"${bookmark.name}" has been deleted.`,
+        })
+      }
+      setBookmarkToDelete(null)
+    }
   }
 
   if (editingBookmarkId) {
@@ -99,25 +104,9 @@ export function BookmarkList({ bookmarks, tripId }: BookmarkListProps) {
                         <Button variant="ghost" size="icon" onClick={() => setEditingBookmarkId(bookmark.id)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete this bookmark. This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteBookmark(bookmark.id)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <Button variant="ghost" size="icon" onClick={() => setBookmarkToDelete(bookmark.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                       </div>
                     </div>
 
@@ -137,6 +126,18 @@ export function BookmarkList({ bookmarks, tripId }: BookmarkListProps) {
           </div>
         </div>
       ))}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={!!bookmarkToDelete}
+        onClose={() => setBookmarkToDelete(null)}
+        onConfirm={handleDeleteBookmark}
+        title="Delete Bookmark"
+        description="Are you sure you want to delete this bookmark? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+      />
     </div>
   )
 }

@@ -7,17 +7,8 @@ import { Card } from "@/components/ui/card"
 import { Edit, Trash2 } from "lucide-react"
 import { ExpenseForm } from "./expense-form"
 import { formatDate } from "@/lib/utils"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { toast } from "sonner"
 
 interface ExpenseListProps {
   expenses: Expense[]
@@ -27,6 +18,7 @@ interface ExpenseListProps {
 export function ExpenseList({ expenses, tripId }: ExpenseListProps) {
   const { deleteExpense, trips } = useTravel()
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null)
+  const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null)
 
   // Sort expenses by date (most recent first)
   const sortedExpenses = [...expenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -52,6 +44,19 @@ export function ExpenseList({ expenses, tripId }: ExpenseListProps) {
         return "A$"
       default:
         return "$"
+    }
+  }
+
+  const handleDeleteExpense = () => {
+    if (expenseToDelete) {
+      const expense = expenses.find((e) => e.id === expenseToDelete)
+      if (expense) {
+        deleteExpense(expenseToDelete)
+        toast.success("Expense deleted", {
+          description: `${getCurrencySymbol(expense.currency)}${expense.amount.toFixed(2)} expense has been deleted.`,
+        })
+      }
+      setExpenseToDelete(null)
     }
   }
 
@@ -107,28 +112,24 @@ export function ExpenseList({ expenses, tripId }: ExpenseListProps) {
             <Button variant="ghost" size="icon" onClick={() => setEditingExpenseId(expense.id)}>
               <Edit className="h-4 w-4" />
             </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete this expense. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => deleteExpense(expense.id)}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button variant="ghost" size="icon" onClick={() => setExpenseToDelete(expense.id)}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
           </div>
         </div>
       ))}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={!!expenseToDelete}
+        onClose={() => setExpenseToDelete(null)}
+        onConfirm={handleDeleteExpense}
+        title="Delete Expense"
+        description="Are you sure you want to delete this expense? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+      />
     </div>
   )
 }

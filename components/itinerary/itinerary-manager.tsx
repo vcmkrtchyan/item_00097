@@ -51,6 +51,12 @@ export function ItineraryManager() {
 
   const selectedTrip = trips.find((trip) => trip.id === selectedTripId)
 
+  const handleTripSuccess = () => {
+    setIsAddingTrip(false)
+    // Force a re-render by setting a state
+    setActiveTab(activeTab)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -73,7 +79,7 @@ export function ItineraryManager() {
             <CardDescription>Fill in the details for your new trip</CardDescription>
           </CardHeader>
           <CardContent>
-            <TripForm onCancel={() => setIsAddingTrip(false)} />
+            <TripForm onCancel={() => setIsAddingTrip(false)} onSuccess={handleTripSuccess} />
           </CardContent>
         </Card>
       ) : selectedTrip ? (
@@ -90,7 +96,7 @@ export function ItineraryManager() {
             {sortedTrips.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {sortedTrips.map((trip) => (
-                  <div key={trip.id} onClick={() => setSelectedTripId(trip.id)}>
+                  <div key={trip.id} onClick={() => setSelectedTripId(trip.id)} className="h-full">
                     <TripCard trip={trip} />
                   </div>
                 ))}

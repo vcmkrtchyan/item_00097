@@ -92,9 +92,11 @@ export function Dashboard() {
             <CardTitle>Upcoming Trips</CardTitle>
             <CardDescription>Your next adventures</CardDescription>
           </div>
-          <Link href="/itinerary">
-            <Button variant="outline">View All</Button>
-          </Link>
+          {upcomingTrips.length > 0 && (
+            <Link href="/itinerary">
+              <Button variant="outline">View All</Button>
+            </Link>
+          )}
         </CardHeader>
         <CardContent>
           {upcomingTrips.length > 0 ? (
@@ -104,7 +106,7 @@ export function Dashboard() {
                   <TripCard trip={trip} />
                 </div>
               ))}
-              {upcomingTrips.length < trips.length && (
+              {upcomingTrips.length < trips.filter((trip) => new Date(trip.startDate) > today).length && (
                 <Link href="/itinerary">
                   <Button variant="outline" className="w-full">
                     View All Trips
@@ -116,7 +118,7 @@ export function Dashboard() {
             <div className="text-center py-6">
               <p className="text-muted-foreground mb-4">No upcoming trips planned</p>
               <Link href="/itinerary">
-                <Button>Go to Itinerary</Button>
+                <Button>Plan a Trip</Button>
               </Link>
             </div>
           )}

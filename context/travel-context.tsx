@@ -48,7 +48,8 @@ type TravelContextType = {
   bookmarks: Bookmark[]
   addTrip: (trip: Omit<Trip, "id">) => void
   updateTrip: (id: string, trip: Partial<Trip>) => void
-  deleteTrip: (id: string) => void
+  deleteTrip: (id: string) => Trip | undefined
+  restoreTrip: (trip: Trip) => void
   addExpense: (expense: Omit<Expense, "id">) => void
   updateExpense: (id: string, expense: Partial<Expense>) => void
   deleteExpense: (id: string) => void
@@ -103,10 +104,34 @@ export function TravelProvider({ children }: { children: React.ReactNode }) {
   }
 
   const deleteTrip = (id: string) => {
+    // Find the trip before deleting it
+    const tripToDelete = trips.find((trip) => trip.id === id)
+
+    // Delete the trip
     setTrips(trips.filter((trip) => trip.id !== id))
-    // Also delete related expenses and bookmarks
+
+    // Also delete related expenses
     setExpenses(expenses.filter((expense) => expense.tripId !== id))
+
+    // Update bookmarks to remove trip association
     setBookmarks(bookmarks.map((bookmark) => (bookmark.tripId === id ? { ...bookmark, tripId: undefined } : bookmark)))
+
+    // Return the deleted trip for potential restoration
+    return tripToDelete
+  }
+
+  // Restore a deleted trip
+  const restoreTrip = (trip: Trip) => {
+    setTrips((prev) => [...prev, trip])
+
+    // Restore trip association for bookmarks that were associated with this trip
+    setBookmarks((prev) =>
+      prev.map((bookmark) =>
+        bookmark.tripId === undefined && bookmarks.some((b) => b.id === bookmark.id && b.tripId === trip.id)
+          ? { ...bookmark, tripId: trip.id }
+          : bookmark,
+      ),
+    )
   }
 
   // Expense functions
@@ -159,6 +184,7 @@ export function TravelProvider({ children }: { children: React.ReactNode }) {
         addTrip,
         updateTrip,
         deleteTrip,
+        restoreTrip,
         addExpense,
         updateExpense,
         deleteExpense,
